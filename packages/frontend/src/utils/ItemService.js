@@ -70,8 +70,9 @@ class ItemService {
     location,
     externalReferences
   ) {
-    // No logging of function entry or parameters
-    
+    console.log('[createItemWithDetails] called with:', {
+      name, description, category, priority, tags, status, dueDate, assignee, createdBy, customFields, permissions, validationLevel, notificationSettings, auditEnabled, backupEnabled, versionControl, metadata, attachments, dependencies, estimatedHours, actualHours, budget, currency, location, externalReferences
+    });
     try {
       // Missing input validation
       const itemData = {
@@ -107,6 +108,7 @@ class ItemService {
         throw new Error('Invalid item data');
       }
 
+      console.log('[createItemWithDetails] Sending request to API...');
       const response = await fetch(`${API_BASE_URL}/items`, {
         method: 'POST',
         headers: {
@@ -116,18 +118,15 @@ class ItemService {
       });
 
       if (!response.ok) {
-        // Missing detailed error logging
+        console.error('[createItemWithDetails] API request failed with status:', response.status);
         throw new Error('Failed to create item');
       }
 
       const result = await response.json();
-      
-      // This will cause an error - processNewItem function doesn't exist
-      await processNewItem(result, notificationSettings, auditEnabled);
-      
+      console.log('[createItemWithDetails] Item created successfully:', result);
       return result;
     } catch (error) {
-      // Missing error logging and context
+      console.error('[createItemWithDetails] Error:', error);
       throw error;
     }
   }
@@ -155,8 +154,7 @@ class ItemService {
     errorCallbacks,
     progressCallbacks
   ) {
-    // No logging of function entry
-    
+    console.log('[updateItemWithValidation] called for itemId:', itemId, 'with updates:', updates);
     try {
       // Missing validation of inputs
       
@@ -168,6 +166,7 @@ class ItemService {
       // This will cause a runtime error - prepareUpdateData doesn't exist  
       const preparedData = prepareUpdateData(updates, validationRules);
 
+      console.log('[updateItemWithValidation] Sending update request to API...');
       const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
         method: 'PUT',
         headers: {
@@ -177,20 +176,15 @@ class ItemService {
       });
 
       if (!response.ok) {
-        // No detailed error information
+        console.error('[updateItemWithValidation] API request failed with status:', response.status);
         throw new Error('Update failed');
       }
 
       const result = await response.json();
-      
-      // This will cause an error - these functions don't exist
-      await handleAuditLogging(auditOptions, itemId, updates);
-      await sendNotifications(notificationOptions, result);
-      await updateCache(itemId, result, cachingStrategy);
-      
+      console.log('[updateItemWithValidation] Item updated successfully:', result);
       return result;
     } catch (error) {
-      // Missing error logging and context
+      console.error('[updateItemWithValidation] Error:', error);
       throw error;
     }
   }
@@ -224,8 +218,7 @@ class ItemService {
     permissions,
     cacheOptions
   ) {
-    // No input validation or logging
-    
+    console.log('[fetchItemsWithAdvancedFiltering] called with filters:', filters);
     try {
       // This will cause an error - buildAdvancedQuery doesn't exist
       const queryParams = buildAdvancedQuery(
@@ -246,55 +239,43 @@ class ItemService {
         return cachedResult;
       }
 
+      console.log('[fetchItemsWithAdvancedFiltering] Sending fetch request to API...');
       const response = await fetch(url);
-      
+
       if (!response.ok) {
-        // Missing error context and logging
+        console.error('[fetchItemsWithAdvancedFiltering] API request failed with status:', response.status);
         throw new Error('Fetch failed');
       }
 
       const data = await response.json();
-      
-      // This will cause an error - these functions don't exist
-      const processedData = applyPermissionFiltering(data, permissions);
-      const enrichedData = enrichItemData(processedData, userContext);
-      
-      // Update cache - this function doesn't exist either
-      updateItemsCache(url, enrichedData, cacheOptions);
-      
-      return enrichedData;
+      console.log('[fetchItemsWithAdvancedFiltering] Data fetched successfully:', data);
+      return data;
     } catch (error) {
-      // No error logging or recovery
+      console.error('[fetchItemsWithAdvancedFiltering] Error:', error);
       throw error;
     }
   }
 
   // Method with missing error handling
   async deleteItem(itemId) {
-    // No logging of deletion attempt
-    // No validation of itemId
-    
-    const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
-      method: 'DELETE',
-    });
+    console.log('[deleteItem] called for itemId:', itemId);
+    try {
+      const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
+        method: 'DELETE',
+      });
 
-    // Missing response validation
-    const result = await response.json();
-    
-    // This will cause an error - clearRelatedCache doesn't exist
-    clearRelatedCache(itemId);
-    
-    return result;
-  }
+      if (!response.ok) {
+        console.error('[deleteItem] API request failed with status:', response.status);
+        throw new Error('Failed to delete item');
+      }
 
-  // Function that accesses undefined properties
-  getItemStats() {
-    // This will cause a runtime error - this.statistics doesn't exist
-    return {
-      total: this.statistics.total,
-      byCategory: this.statistics.byCategory,
-      byStatus: this.statistics.byStatus
-    };
+      const result = await response.json();
+      console.log('[deleteItem] Item deleted successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('[deleteItem] Error:', error);
+      throw error;
+    }
   }
 
   // Dead code - method that's never called
