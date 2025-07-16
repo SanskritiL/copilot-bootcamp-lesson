@@ -1,32 +1,130 @@
 /**
  * ItemService - Service for managing item operations
- * This file contains multiple issues that need refactoring:
- * - Long parameter lists in functions
- * - Dead/unused code
- * - Missing error handling and logging
- * - Functions that will cause runtime errors
+ * Handles item creation, updates, deletion and filtering with proper validation
  */
 
 const API_BASE_URL = '/api';
 
-// Dead code - unused constants
-const UNUSED_CONSTANT = 'This is never used anywhere';
-const OLD_API_VERSION = 'v1'; // Not used anymore
-const DEPRECATED_ENDPOINTS = {
-  old_items: '/api/v1/items',
-  old_users: '/api/v1/users'
-};
-
-// Unused utility functions (dead code)
-function unusedUtilityFunction(data) {
-  console.log('This function is never called');
-  return data.map(item => item.id);
+// Utility functions for validation and data processing
+function validateItemData(itemData) {
+  console.log('[validateItemData] Validating item data');
+  const requiredFields = ['name', 'category', 'status'];
+  const isValid = requiredFields.every(field => {
+    const hasField = itemData[field] !== undefined && itemData[field] !== null;
+    if (!hasField) {
+      console.warn(`[validateItemData] Missing required field: ${field}`);
+    }
+    return hasField;
+  });
+  console.log('[validateItemData] Validation result:', isValid);
+  return isValid;
 }
 
-function deprecatedDataProcessor(items, filters, sorts, pagination) {
-  // This function was replaced but never removed
-  const processed = items.filter(filters).sort(sorts);
-  return processed.slice(pagination.start, pagination.end);
+function validateUserPermissions(permissions, itemId) {
+  console.log('[validateUserPermissions] Checking permissions for item:', itemId);
+  if (!permissions || !Array.isArray(permissions)) {
+    console.warn('[validateUserPermissions] Invalid permissions format');
+    return false;
+  }
+  const hasRequiredPermissions = permissions.includes('write') || permissions.includes('admin');
+  console.log('[validateUserPermissions] Has required permissions:', hasRequiredPermissions);
+  return hasRequiredPermissions;
+}
+
+function prepareUpdateData(updates, validationRules = {}) {
+  console.log('[prepareUpdateData] Preparing update data');
+  const preparedData = { ...updates };
+  
+  // Apply validation rules if provided
+  if (Object.keys(validationRules).length > 0) {
+    Object.entries(validationRules).forEach(([field, rule]) => {
+      if (preparedData[field] !== undefined) {
+        switch (rule.type) {
+          case 'string':
+            preparedData[field] = String(preparedData[field]);
+            break;
+          case 'number':
+            preparedData[field] = Number(preparedData[field]);
+            break;
+          case 'boolean':
+            preparedData[field] = Boolean(preparedData[field]);
+            break;
+          case 'date':
+            preparedData[field] = new Date(preparedData[field]).toISOString();
+            break;
+          default:
+            console.warn(`[prepareUpdateData] Unknown validation rule type: ${rule.type}`);
+            break;
+        }
+      }
+    });
+  }
+
+  console.log('[prepareUpdateData] Prepared data:', preparedData);
+  return preparedData;
+}
+
+function buildAdvancedQuery(filters, sorting, pagination, includes, excludes, searchTerm, dateRange) {
+  console.log('[buildAdvancedQuery] Building query parameters');
+  const params = new URLSearchParams();
+
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      params.append(`filter[${key}]`, value);
+    });
+  }
+
+  if (sorting) {
+    params.append('sort', `${sorting.direction === 'desc' ? '-' : ''}${sorting.field}`);
+  }
+
+  if (pagination) {
+    params.append('page[size]', pagination.pageSize);
+    params.append('page[number]', pagination.pageNumber);
+  }
+
+  if (includes?.length) {
+    params.append('include', includes.join(','));
+  }
+
+  if (excludes?.length) {
+    params.append('exclude', excludes.join(','));
+  }
+
+  if (searchTerm) {
+    params.append('search', searchTerm);
+  }
+
+  if (dateRange) {
+    if (dateRange.start) params.append('dateFrom', dateRange.start);
+    if (dateRange.end) params.append('dateTo', dateRange.end);
+  }
+
+  console.log('[buildAdvancedQuery] Built query string:', params.toString());
+  return params.toString();
+}
+
+function checkCacheFirst(url, cacheOptions = {}) {
+  console.log('[checkCacheFirst] Checking cache for URL:', url);
+  const cacheKey = `item-cache:${url}`;
+  const cachedData = localStorage.getItem(cacheKey);
+  
+  if (cachedData) {
+    const { data, timestamp } = JSON.parse(cachedData);
+    const maxAge = cacheOptions.maxAge || 5 * 60 * 1000; // 5 minutes default
+    const isExpired = Date.now() - timestamp > maxAge;
+    
+    if (!isExpired) {
+      console.log('[checkCacheFirst] Cache hit');
+      return data;
+    } else {
+      console.log('[checkCacheFirst] Cache expired, removing');
+      localStorage.removeItem(cacheKey);
+    }
+  }
+  
+  console.log('[checkCacheFirst] Cache miss');
+  return null;
 }
 
 class ItemService {
@@ -278,59 +376,6 @@ class ItemService {
     }
   }
 
-  // Dead code - method that's never called
-  generateReportData(items, reportType, filters) {
-    console.log('This method is never used');
-    
-    if (reportType === 'summary') {
-      return this.generateSummaryReport(items, filters);
-    } else if (reportType === 'detailed') {
-      return this.generateDetailedReport(items, filters);
-    }
-    
-    return null;
-  }
-
-  // More dead code
-  exportToFormat(data, format, options) {
-    // This export functionality was never implemented fully
-    switch (format) {
-      case 'csv':
-        return this.exportToCSV(data, options);
-      case 'json':
-        return this.exportToJSON(data, options);
-      case 'xml':
-        return this.exportToXML(data, options);
-      default:
-        return null;
-    }
-  }
-
-  // Unused private methods
-  _oldValidation(data) {
-    // Old validation logic that's no longer used
-    return data && typeof data === 'object';
-  }
-
-  _deprecatedFormatter(value, type) {
-    // Formatting logic that was replaced
-    if (type === 'date') {
-      return new Date(value).toISOString();
-    }
-    return String(value);
-  }
-}
-
-// Dead code - unused exports and variables
-const unusedServiceInstance = new ItemService();
-const deprecatedConfig = {
-  apiVersion: 'v1',
-  timeout: 30000
-};
-
-// Function that's never used
-function createLegacyService(config) {
-  return new ItemService(config);
 }
 
 export default ItemService;
